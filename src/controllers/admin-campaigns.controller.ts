@@ -72,4 +72,23 @@ export class AdminCampaignsController {
             error: req.query.error || null
         });
     }
+
+    static async send(req: Request, res: Response) {
+        const campaignId = getRequiredParam(req, "id");
+
+        try {
+            await CampaignService.sendCampaign(
+                req.user!.workspaceId,
+                campaignId
+            );
+
+            return res.redirect(
+                `/admin/campaigns/${campaignId}?success=sent`
+            );
+        } catch {
+            return res.redirect(
+                `/admin/campaigns/${campaignId}?error=send`
+            );
+        }
+    }
 }

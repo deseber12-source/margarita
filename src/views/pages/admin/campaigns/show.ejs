@@ -38,21 +38,97 @@
             </div>
         <% } %>
 
-        <% if (error) { %>
+        <% if (success === "sent") { %>
+            <div class="mb-6 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                Campaña enviada. Revisa el estado de cada destinatario.
+            </div>
+        <% } %>
+
+        <% if (error === "send") { %>
+            <div class="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                No se pudo enviar la campaña. Revisa logs y destinatarios.
+            </div>
+        <% } %>
+
+        <% if (error && error !== "send") { %>
             <div class="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
                 Ocurrió un error en la campaña.
             </div>
         <% } %>
+
+        <section class="mb-6 grid gap-4 md:grid-cols-4">
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                <p class="text-sm text-slate-500">
+                    Total
+                </p>
+
+                <p class="mt-2 text-3xl font-bold text-slate-900">
+                    <%= campaign.totalRecipients %>
+                </p>
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-emerald-200">
+                <p class="text-sm text-emerald-700">
+                    Válidos
+                </p>
+
+                <p class="mt-2 text-3xl font-bold text-emerald-700">
+                    <%= campaign.validRecipients %>
+                </p>
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-red-200">
+                <p class="text-sm text-red-700">
+                    Inválidos
+                </p>
+
+                <p class="mt-2 text-3xl font-bold text-red-700">
+                    <%= campaign.invalidRecipients %>
+                </p>
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-orange-200">
+                <p class="text-sm text-orange-700">
+                    Duplicados
+                </p>
+
+                <p class="mt-2 text-3xl font-bold text-orange-700">
+                    <%= campaign.duplicateRecipients %>
+                </p>
+            </div>
+        </section>
+
+        <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <div>
+                    <h2 class="font-bold text-slate-900">
+                        Envío controlado
+                    </h2>
+
+                    <p class="mt-1 text-sm text-slate-500">
+                        Esta versión envía la plantilla uno por uno a los destinatarios pendientes.
+                    </p>
+                </div>
+
+                <% if (campaign.status === "DRAFT" || campaign.status === "READY" || campaign.status === "FAILED") { %>
+                    <form action="/admin/campaigns/<%= campaign.id %>/send" method="POST">
+                        <button class="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
+                            Enviar campaña
+                        </button>
+                    </form>
+                <% } else { %>
+                    <span class="rounded-xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-500">
+                        Envío no disponible en estado <%= campaign.status %>
+                    </span>
+                <% } %>
+            </div>
+        </section>
 
         <section class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
             <div class="border-b border-slate-200 px-6 py-4">
                 <h2 class="font-bold text-slate-900">
                     Destinatarios
                 </h2>
-
-                <p class="mt-1 text-sm text-slate-500">
-                    Esta campaña está preparada. El envío se implementa en el siguiente sprint.
-                </p>
             </div>
 
             <% if (campaign.recipients.length === 0) { %>
@@ -65,12 +141,22 @@
                         <div class="flex flex-col justify-between gap-3 px-6 py-4 md:flex-row md:items-center">
                             <div>
                                 <p class="font-semibold text-slate-900">
-                                    <%= recipient.contact.name || recipient.contact.profileName || recipient.contact.phone %>
+                                    <% if (recipient.contact) { %>
+                                        <%= recipient.contact.customName || recipient.contact.profileName || recipient.contact.phone %>
+                                    <% } else { %>
+                                        <%= recipient.phone %>
+                                    <% } %>
                                 </p>
 
                                 <p class="text-sm text-slate-500">
-                                    <%= recipient.contact.phone %>
+                                    <%= recipient.phone %>
                                 </p>
+
+                                <% if (recipient.errorMessage) { %>
+                                    <p class="mt-1 text-xs text-red-600">
+                                        <%= recipient.errorMessage %>
+                                    </p>
+                                <% } %>
                             </div>
 
                             <div class="flex flex-wrap items-center gap-2">

@@ -1,13 +1,27 @@
+import axios from "axios";
 import {
     CampaignRecipientStatus,
     CampaignStatus,
+    ConversationOperationalStatus,
+    ConversationSource,
+    ConversationStatus,
     LogLevel,
-    LogModule
+    LogModule,
+    MessageDirection,
+    MessageSource,
+    MessageStatus,
+    MessageType,
+    Prisma
 } from "@prisma/client";
 
 import { prisma } from "../config/prisma";
 import { CreateCampaignInput } from "../validations/campaign.validation";
+import { renderTemplatePreview, countTemplateVariables } from "../utils/template";
 import { LogService } from "./log.service";
+
+function toPrismaJson(value: unknown): Prisma.InputJsonValue {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
 
 export class CampaignService {
     static async listCampaigns(workspaceId: string) {
@@ -165,6 +179,329 @@ export class CampaignService {
                         createdAt: "desc"
                     }
                 }
+            }
+        });
+    }
+
+    static async sendCampaign(workspaceId: string, campaignId: string) {
+        const campaign = await prisma.campaign.findFirst({
+            where: {
+                id: campaignId,
+                workspaceId
+            },
+            include: {
+                template: true,
+                recipients: {
+                    where: {
+                        status: CampaignRecipientStatus.PENDING
+                    },
+                    include: {
+                        contact: true
+                    },
+                    orderBy: {
+                        createdAt: "asc"
+                    }
+                }
+            }
+        });
+
+        if (!campaign) {
+            throw new Error("Campaña no encontrada.");
+        }
+
+        if (
+            campaign.status !== CampaignStatus.DRAFT &&
+            campaign.status !== CampaignStatus.READY &&
+            campaign.status !== CampaignStatus.FAILED
+        ) {
+            throw new Error("La campaña no se puede enviar en su estado actual.");
+        }
+
+        if (campaign.template.status !== "APPROVED") {
+            throw new Error("La plantilla de la campaña no está aprobada.");
+        }
+
+        const requiredVariables = countTemplateVariables(campaign.template.components);
+
+        if (requiredVariables > 0) {
+            throw new Error(
+                "Esta versión de campañas solo soporta plantillas sin variables."
+            );
+        }
+
+        if (campaign.recipients.length === 0) {
+            throw new Error("No hay destinatarios pendientes.");
+        }
+
+        const account = await prisma.whatsAppAccount.findUnique({
+            where: {
+                workspaceId
+            }
+        });
+
+        if (!account) {
+            throw new Error("No hay cuenta de WhatsApp configurada.");
+        }
+
+        await prisma.campaign.update({
+            where: {
+                id: campaign.id
+            },
+            data: {
+                status: CampaignStatus.RUNNING,
+                startedAt: campaign.startedAt || new Date()
+            }
+        });
+
+        await LogService.create({
+            workspaceId,
+            level: LogLevel.INFO,
+            module: LogModule.CAMPAIGN,
+            action: "CAMPAIGN_SEND_STARTED",
+            message: "Inicio de envío de campaña.",
+            payload: {
+                campaignId: campaign.id,
+                recipients: campaign.recipients.length
+            }
+        });
+
+        let sentCount = 0;
+        let failedCount = 0;
+
+        for (const recipient of campaign.recipients) {
+            try {
+                await prisma.campaignRecipient.update({
+                    where: {
+                        id: recipient.id
+                    },
+                    data: {
+                        status: CampaignRecipientStatus.SENDING
+                    }
+                });
+
+                if (!recipient.contact) {
+                    throw new Error("El destinatario no tiene contacto asociado.");
+                }
+
+                const conversation = await this.getOrCreateCampaignConversation({
+                    workspaceId,
+                    contactId: recipient.contact.id
+                });
+
+                const previewBody = renderTemplatePreview(
+                    campaign.template.components,
+                    []
+                );
+
+                const localMessage = await prisma.message.create({
+                    data: {
+                        workspaceId,
+                        conversationId: conversation.id,
+                        campaignId: campaign.id,
+                        direction: MessageDirection.OUT,
+                        type: MessageType.TEMPLATE,
+                        status: MessageStatus.SENDING,
+                        source: MessageSource.CAMPAIGN,
+                        body: previewBody,
+                        metaPayload: toPrismaJson({
+                            campaignId: campaign.id,
+                            campaignRecipientId: recipient.id,
+                            templateId: campaign.template.id,
+                            templateName: campaign.template.name,
+                            language: campaign.template.language,
+                            phone: recipient.phone
+                        })
+                    }
+                });
+
+                const payload = {
+                    messaging_product: "whatsapp",
+                    to: recipient.phone,
+                    type: "template",
+                    template: {
+                        name: campaign.template.name,
+                        language: {
+                            code: campaign.template.language
+                        }
+                    }
+                };
+
+                const response = await axios.post(
+                    `https://graph.facebook.com/${account.apiVersion}/${account.phoneNumberId}/messages`,
+                    payload,
+                    {
+                        params: {
+                            access_token: account.accessToken
+                        },
+                        timeout: 15000
+                    }
+                );
+
+                const wamid =
+                    Array.isArray(response.data?.messages) &&
+                    response.data.messages[0]?.id
+                        ? String(response.data.messages[0].id)
+                        : null;
+
+                const updatedMessage = await prisma.message.update({
+                    where: {
+                        id: localMessage.id
+                    },
+                    data: {
+                        status: MessageStatus.SENT,
+                        wamid,
+                        metaResponse: toPrismaJson(response.data)
+                    }
+                });
+
+                await prisma.campaignRecipient.update({
+                    where: {
+                        id: recipient.id
+                    },
+                    data: {
+                        status: CampaignRecipientStatus.SENT,
+                        messageId: updatedMessage.id,
+                        errorCode: null,
+                        errorMessage: null
+                    }
+                });
+
+                await prisma.conversation.update({
+                    where: {
+                        id: conversation.id
+                    },
+                    data: {
+                        lastMessageAt: updatedMessage.createdAt,
+                        status: ConversationStatus.OPEN,
+                        operationalStatus: conversation.assignedUserId
+                            ? ConversationOperationalStatus.IN_PROGRESS
+                            : ConversationOperationalStatus.UNASSIGNED,
+                        closedAt: null
+                    }
+                });
+
+                sentCount++;
+            } catch (error) {
+                failedCount++;
+
+                const errorPayload = axios.isAxiosError(error)
+                    ? {
+                          status: error.response?.status,
+                          data: error.response?.data,
+                          message: error.message
+                      }
+                    : {
+                          message:
+                              error instanceof Error
+                                  ? error.message
+                                  : "Error desconocido"
+                      };
+
+                await prisma.campaignRecipient.update({
+                    where: {
+                        id: recipient.id
+                    },
+                    data: {
+                        status: CampaignRecipientStatus.FAILED,
+                        errorCode: axios.isAxiosError(error)
+                            ? String(error.response?.data?.error?.code || "")
+                            : null,
+                        errorMessage: axios.isAxiosError(error)
+                            ? String(
+                                  error.response?.data?.error?.message ||
+                                      error.message
+                              )
+                            : error instanceof Error
+                              ? error.message
+                              : "Error desconocido"
+                    }
+                });
+
+                await LogService.create({
+                    workspaceId,
+                    level: LogLevel.ERROR,
+                    module: LogModule.CAMPAIGN,
+                    action: "CAMPAIGN_RECIPIENT_FAILED",
+                    message: "No se pudo enviar la campaña a un destinatario.",
+                    payload: {
+                        campaignId: campaign.id,
+                        recipientId: recipient.id,
+                        phone: recipient.phone,
+                        error: errorPayload
+                    }
+                });
+            }
+        }
+
+        const finalStatus =
+            failedCount > 0 && sentCount === 0
+                ? CampaignStatus.FAILED
+                : CampaignStatus.FINISHED;
+
+        await prisma.campaign.update({
+            where: {
+                id: campaign.id
+            },
+            data: {
+                status: finalStatus,
+                finishedAt: new Date()
+            }
+        });
+
+        await LogService.create({
+            workspaceId,
+            level: failedCount > 0 ? LogLevel.WARN : LogLevel.INFO,
+            module: LogModule.CAMPAIGN,
+            action: "CAMPAIGN_SEND_FINISHED",
+            message: "Envío de campaña finalizado.",
+            payload: {
+                campaignId: campaign.id,
+                sentCount,
+                failedCount,
+                finalStatus
+            }
+        });
+
+        return {
+            sentCount,
+            failedCount,
+            finalStatus
+        };
+    }
+
+    private static async getOrCreateCampaignConversation(params: {
+        workspaceId: string;
+        contactId: string;
+    }) {
+        const existingConversation = await prisma.conversation.findUnique({
+            where: {
+                workspaceId_contactId: {
+                    workspaceId: params.workspaceId,
+                    contactId: params.contactId
+                }
+            }
+        });
+
+        if (existingConversation) {
+            return prisma.conversation.update({
+                where: {
+                    id: existingConversation.id
+                },
+                data: {
+                    status: ConversationStatus.OPEN,
+                    closedAt: null
+                }
+            });
+        }
+
+        return prisma.conversation.create({
+            data: {
+                workspaceId: params.workspaceId,
+                contactId: params.contactId,
+                status: ConversationStatus.OPEN,
+                operationalStatus: ConversationOperationalStatus.UNASSIGNED,
+                source: ConversationSource.CAMPAIGN,
+                lastMessageAt: new Date()
             }
         });
     }
