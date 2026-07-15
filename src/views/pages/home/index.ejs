@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= appName %></title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body class="min-h-screen bg-slate-100">
+    <main class="flex min-h-screen items-center justify-center px-6">
+        <section class="w-full max-w-lg rounded-2xl bg-white p-10 shadow-xl">
+            <div class="mb-8 text-center">
+                <div class="mb-4 text-5xl">🌼</div>
+
+                <h1 class="text-4xl font-bold text-emerald-600">
+                    <%= appName %>
+                </h1>
+
+                <p class="mt-4 text-slate-600">
+                    Plataforma operativa para WhatsApp Business Cloud API.
+                </p>
+
+                <p class="mt-2 text-sm text-slate-500">
+                    Envía campañas, recibe respuestas, asigna conversaciones y monitorea mensajes desde un solo lugar.
+                </p>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+                <a
+                    href="/auth/login"
+                    class="rounded-xl bg-emerald-600 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-emerald-700"
+                >
+                    Ir al login
+                </a>
+
+                <a
+                    href="#estado"
+                    class="rounded-xl bg-slate-100 px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                >
+                    Estado del servidor
+                </a>
+            </div>
+
+            <div id="estado" class="mt-6 rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-500">
+                Servidor funcionando correctamente · Versión <%= version %>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

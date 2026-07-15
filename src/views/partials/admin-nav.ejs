@@ -1,0 +1,60 @@
+<nav class="border-b border-slate-200 bg-white">
+    <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4">
+        <a href="/admin/dashboard" class="text-xl font-bold text-emerald-600">
+            Margarita
+        </a>
+
+        <div class="flex flex-wrap items-center gap-3 text-sm">
+            <a href="/admin/dashboard" class="font-semibold text-slate-600 hover:text-emerald-600">
+                Dashboard
+            </a>
+
+            <a href="/admin/conversations" class="font-semibold text-slate-600 hover:text-emerald-600">
+                Conversaciones
+            </a>
+
+            <a href="/admin/contacts" class="font-semibold text-slate-600 hover:text-emerald-600">
+                Contactos
+            </a>
+
+            <a href="/admin/tags" class="font-semibold text-slate-600 hover:text-emerald-600">
+                Etiquetas
+            </a>
+
+            <a href="/admin/users" class="font-semibold text-slate-600 hover:text-emerald-600">
+                Agentes
+            </a>
+
+            <a href="/admin/templates" class="font-semibold text-slate-600 hover:text-emerald-600">
+                Plantillas
+            </a>
+
+            <a href="/admin/whatsapp" class="font-semibold text-slate-600 hover:text-emerald-600">
+                WhatsApp
+            </a>
+
+            <a href="/admin/logs" class="font-semibold text-slate-600 hover:text-emerald-600">
+                Logs
+            </a>
+
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="text-right">
+                <p class="text-sm font-semibold text-slate-800">
+                    <%= user.name %>
+                </p>
+
+                <p class="text-xs text-slate-500">
+                    <%= user.role %>
+                </p>
+            </div>
+
+            <form action="/auth/logout" method="POST">
+                <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                    Salir
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
