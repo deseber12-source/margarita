@@ -11,7 +11,7 @@ import adminWhatsAppRoutes from "./admin-whatsapp.routes";
 import adminTemplatesRoutes from "./admin-templates.routes";
 import adminConversationsRoutes from "./admin-conversations.routes";
 import adminLogsRoutes from "./admin-logs.routes";
-
+import adminCampaignsRoutes from "./admin-campaigns.routes";
 
 
 const router = Router();
@@ -27,5 +27,6 @@ router.use("/whatsapp", adminWhatsAppRoutes);
 router.use("/templates", adminTemplatesRoutes);
 router.use("/conversations", adminConversationsRoutes);
 router.use("/logs", adminLogsRoutes);
+router.use("/campaigns", adminCampaignsRoutes);
 
 export default router;

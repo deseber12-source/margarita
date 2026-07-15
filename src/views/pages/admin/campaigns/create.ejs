@@ -1,0 +1,121 @@
+<%- include("../../../partials/header", { title: "Nueva campaña - Admin" }) %>
+
+<div class="min-h-screen bg-slate-100">
+    <%- include("../../../partials/admin-nav", { user }) %>
+
+    <main class="mx-auto max-w-7xl px-4 py-8">
+        <div class="mb-8">
+            <a href="/admin/campaigns" class="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                ← Volver a campañas
+            </a>
+
+            <h1 class="mt-3 text-3xl font-bold text-slate-900">
+                Nueva campaña
+            </h1>
+
+            <p class="mt-2 text-slate-600">
+                Selecciona una plantilla aprobada y los contactos que recibirán la campaña.
+            </p>
+        </div>
+
+        <% if (error) { %>
+            <div class="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                No se pudo crear la campaña. Revisa plantilla y contactos.
+            </div>
+        <% } %>
+
+        <form action="/admin/campaigns" method="POST" class="grid gap-6 lg:grid-cols-[380px_1fr]">
+            <section class="space-y-5 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                <div>
+                    <label class="mb-1 block text-sm font-semibold text-slate-700">
+                        Nombre de campaña
+                    </label>
+
+                    <input
+                        name="name"
+                        placeholder="Ej. Recordatorio de pago julio"
+                        required
+                        class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    />
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-sm font-semibold text-slate-700">
+                        Plantilla aprobada
+                    </label>
+
+                    <select
+                        name="templateId"
+                        required
+                        class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    >
+                        <option value="">Selecciona plantilla</option>
+
+                        <% templates.forEach((template) => { %>
+                            <option value="<%= template.id %>">
+                                <%= template.name %> · <%= template.language %>
+                            </option>
+                        <% }) %>
+                    </select>
+
+                    <% if (templates.length === 0) { %>
+                        <p class="mt-2 text-xs text-red-600">
+                            No hay plantillas aprobadas. Sincroniza plantillas desde Meta.
+                        </p>
+                    <% } %>
+                </div>
+
+                <div class="rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                    Solo usa campañas para contactos que aceptaron recibir mensajes. WhatsApp puede limitar o bloquear números si detecta abuso o mala calidad.
+                </div>
+
+                <button class="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
+                    Crear campaña
+                </button>
+            </section>
+
+            <section class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+                <div class="border-b border-slate-200 px-6 py-4">
+                    <h2 class="font-bold text-slate-900">
+                        Contactos activos
+                    </h2>
+
+                    <p class="mt-1 text-sm text-slate-500">
+                        Selecciona los destinatarios de esta campaña.
+                    </p>
+                </div>
+
+                <% if (contacts.length === 0) { %>
+                    <div class="px-6 py-10 text-sm text-slate-500">
+                        No hay contactos activos.
+                    </div>
+                <% } else { %>
+                    <div class="max-h-[640px] divide-y divide-slate-100 overflow-y-auto">
+                        <% contacts.forEach((contact) => { %>
+                            <label class="flex cursor-pointer items-center gap-4 px-6 py-4 hover:bg-slate-50">
+                                <input
+                                    type="checkbox"
+                                    name="contactIds"
+                                    value="<%= contact.id %>"
+                                    class="h-4 w-4 rounded border-slate-300 text-emerald-600"
+                                />
+
+                                <div>
+                                    <p class="font-semibold text-slate-900">
+                                        <%= contact.name || contact.profileName || contact.phone %>
+                                    </p>
+
+                                    <p class="text-sm text-slate-500">
+                                        <%= contact.phone %>
+                                    </p>
+                                </div>
+                            </label>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </section>
+        </form>
+    </main>
+</div>
+
+<%- include("../../../partials/footer") %>

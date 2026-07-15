@@ -7,6 +7,8 @@ import { getRequiredParam } from "../utils/request";
 import { sendFreeTextMessageSchema } from "../validations/free-text-message.validation";
 import { sendLocalMessageSchema } from "../validations/message.validation";
 import { sendTemplateMessageSchema } from "../validations/template-message.validation";
+import { formatDateTimeMX, formatTimeMX } from "../utils/date";
+
 
 export class AgentConversationsController {
     static async index(req: Request, res: Response) {
@@ -39,6 +41,8 @@ export class AgentConversationsController {
             user: req.user,
             conversation,
             templates,
+            formatDateTimeMX,
+            formatTimeMX,
             success: req.query.success || null,
             error: req.query.error || null
         });

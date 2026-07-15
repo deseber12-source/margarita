@@ -1,0 +1,95 @@
+<%- include("../../../partials/header", { title: "Campaña - Admin" }) %>
+
+<div class="min-h-screen bg-slate-100">
+    <%- include("../../../partials/admin-nav", { user }) %>
+
+    <main class="mx-auto max-w-7xl px-4 py-8">
+        <div class="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-start">
+            <div>
+                <a href="/admin/campaigns" class="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                    ← Volver a campañas
+                </a>
+
+                <h1 class="mt-3 text-3xl font-bold text-slate-900">
+                    <%= campaign.name %>
+                </h1>
+
+                <p class="mt-2 text-slate-600">
+                    Plantilla:
+                    <strong><%= campaign.template.name %></strong>
+                    · <%= campaign.template.language %>
+                </p>
+            </div>
+
+            <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                <p class="text-sm text-slate-500">
+                    Estado
+                </p>
+
+                <p class="mt-1 text-xl font-bold text-slate-900">
+                    <%= campaign.status %>
+                </p>
+            </div>
+        </div>
+
+        <% if (success === "created") { %>
+            <div class="mb-6 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                Campaña creada correctamente.
+            </div>
+        <% } %>
+
+        <% if (error) { %>
+            <div class="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                Ocurrió un error en la campaña.
+            </div>
+        <% } %>
+
+        <section class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+            <div class="border-b border-slate-200 px-6 py-4">
+                <h2 class="font-bold text-slate-900">
+                    Destinatarios
+                </h2>
+
+                <p class="mt-1 text-sm text-slate-500">
+                    Esta campaña está preparada. El envío se implementa en el siguiente sprint.
+                </p>
+            </div>
+
+            <% if (campaign.recipients.length === 0) { %>
+                <div class="px-6 py-10 text-sm text-slate-500">
+                    No hay destinatarios.
+                </div>
+            <% } else { %>
+                <div class="divide-y divide-slate-100">
+                    <% campaign.recipients.forEach((recipient) => { %>
+                        <div class="flex flex-col justify-between gap-3 px-6 py-4 md:flex-row md:items-center">
+                            <div>
+                                <p class="font-semibold text-slate-900">
+                                    <%= recipient.contact.name || recipient.contact.profileName || recipient.contact.phone %>
+                                </p>
+
+                                <p class="text-sm text-slate-500">
+                                    <%= recipient.contact.phone %>
+                                </p>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                    <%= recipient.status %>
+                                </span>
+
+                                <% if (recipient.message) { %>
+                                    <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                        Mensaje creado
+                                    </span>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } %>
+        </section>
+    </main>
+</div>
+
+<%- include("../../../partials/footer") %>
