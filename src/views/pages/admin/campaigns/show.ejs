@@ -1,5 +1,15 @@
 <%- include("../../../partials/header", { title: "Campaña - Admin" }) %>
 
+<%
+    const recipientSummary = campaign.recipients.reduce(
+        (acc, recipient) => {
+            acc[recipient.status] = (acc[recipient.status] || 0) + 1;
+            return acc;
+        },
+        {}
+    );
+%>
+
 <div class="min-h-screen bg-slate-100">
     <%- include("../../../partials/admin-nav", { user }) %>
 
@@ -97,6 +107,44 @@
                 </p>
             </div>
         </section>
+
+        <section class="mb-6 grid gap-4 md:grid-cols-5">
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                <p class="text-sm text-slate-500">Pendientes</p>
+                <p class="mt-2 text-3xl font-bold text-slate-700">
+                    <%= recipientSummary.PENDING || 0 %>
+                </p>
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-blue-200">
+                <p class="text-sm text-blue-700">Enviados</p>
+                <p class="mt-2 text-3xl font-bold text-blue-700">
+                    <%= recipientSummary.SENT || 0 %>
+                </p>
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-emerald-200">
+                <p class="text-sm text-emerald-700">Entregados</p>
+                <p class="mt-2 text-3xl font-bold text-emerald-700">
+                    <%= recipientSummary.DELIVERED || 0 %>
+                </p>
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-purple-200">
+                <p class="text-sm text-purple-700">Leídos</p>
+                <p class="mt-2 text-3xl font-bold text-purple-700">
+                    <%= recipientSummary.READ || 0 %>
+                </p>
+            </div>
+
+            <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-red-200">
+                <p class="text-sm text-red-700">Fallidos</p>
+                <p class="mt-2 text-3xl font-bold text-red-700">
+                    <%= recipientSummary.FAILED || 0 %>
+                </p>
+            </div>
+        </section>
+
 
         <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">

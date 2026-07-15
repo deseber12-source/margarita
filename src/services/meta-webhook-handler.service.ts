@@ -1,4 +1,5 @@
 import {
+    CampaignRecipientStatus,
     ConversationOperationalStatus,
     ConversationSource,
     ConversationStatus,
@@ -374,6 +375,41 @@ export class MetaWebhookHandlerService {
             }
         });
 
+        const campaignRecipientStatus =
+            this.mapMetaStatusToCampaignRecipientStatus(status.status);
+
+        if (campaignRecipientStatus) {
+            await prisma.campaignRecipient.updateMany({
+                where: {
+                    messageId: existingMessage.id
+                },
+                data: {
+                    status: campaignRecipientStatus,
+                    ...(campaignRecipientStatus === CampaignRecipientStatus.FAILED
+                        ? {
+                            errorCode:
+                                Array.isArray(status.errors) &&
+                                status.errors[0] &&
+                                typeof status.errors[0] === "object" &&
+                                "code" in status.errors[0]
+                                    ? String(status.errors[0].code)
+                                    : null,
+                            errorMessage:
+                                Array.isArray(status.errors) &&
+                                status.errors[0] &&
+                                typeof status.errors[0] === "object" &&
+                                "message" in status.errors[0]
+                                    ? String(status.errors[0].message)
+                                    : "Meta reportó fallo en el mensaje."
+                        }
+                        : {
+                            errorCode: null,
+                            errorMessage: null
+                        })
+                }
+            });
+        }
+
         await LogService.create({
             workspaceId,
             level: LogLevel.INFO,
@@ -382,7 +418,9 @@ export class MetaWebhookHandlerService {
             message: "Estado de mensaje actualizado desde webhook.",
             payload: {
                 wamid: status.id,
-                status: status.status
+                status: status.status,
+                messageId: existingMessage.id,
+                campaignRecipientStatus
             }
         });
     }
@@ -406,4 +444,35 @@ export class MetaWebhookHandlerService {
 
         return null;
     }
+
+
+    private static mapMetaStatusToCampaignRecipientStatus(
+        status: string
+    ): CampaignRecipientStatus | null {
+        if (status === "sent") {
+            return CampaignRecipientStatus.SENT;
+        }
+
+        if (status === "delivered") {
+            return CampaignRecipientStatus.DELIVERED;
+        }
+
+        if (status === "read") {
+            return CampaignRecipientStatus.READ;
+        }
+
+        if (status === "failed") {
+            return CampaignRecipientStatus.FAILED;
+        }
+
+        return null;
+    }
+
+
+
+
+
+
+
 }
+
