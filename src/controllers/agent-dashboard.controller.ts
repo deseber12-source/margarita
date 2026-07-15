@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { UserStatus } from "@prisma/client";
 
 import { AgentService } from "../services/agent.service";
 import { DashboardService } from "../services/dashboard.service";
@@ -20,11 +21,9 @@ export class AgentDashboardController {
 
     static async updateStatus(req: Request, res: Response) {
         try {
-            await AgentService.updateOwnStatus({
-                workspaceId: req.user!.workspaceId,
-                userId: req.user!.id,
-                status: req.body.status
-            });
+            const status = req.body.status as UserStatus;
+
+            await AgentService.updateStatus(req.user!.id, status);
 
             return res.redirect("/agent/dashboard?success=status");
         } catch {

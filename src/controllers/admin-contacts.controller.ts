@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 import { ContactService } from "../services/contact.service";
 import { TagService } from "../services/tag.service";
+import { getRequiredParam } from "../utils/request";
 import {
     createContactSchema,
     updateContactSchema
@@ -107,12 +108,11 @@ export class AdminContactsController {
     }
 
     static async showEdit(req: Request, res: Response) {
+        const id = getRequiredParam(req, "id");
+
         try {
             const [contact, tags] = await Promise.all([
-                ContactService.getContactById(
-                    req.user!.workspaceId,
-                    req.params.id
-                ),
+                ContactService.getContactById(req.user!.workspaceId, id),
                 TagService.listTags(req.user!.workspaceId)
             ]);
 
@@ -128,14 +128,13 @@ export class AdminContactsController {
     }
 
     static async update(req: Request, res: Response) {
+        const id = getRequiredParam(req, "id");
+
         const parsed = updateContactSchema.safeParse(req.body);
 
         if (!parsed.success) {
             const [contact, tags] = await Promise.all([
-                ContactService.getContactById(
-                    req.user!.workspaceId,
-                    req.params.id
-                ),
+                ContactService.getContactById(req.user!.workspaceId, id),
                 TagService.listTags(req.user!.workspaceId)
             ]);
 
@@ -150,7 +149,7 @@ export class AdminContactsController {
         try {
             await ContactService.updateContact(
                 req.user!.workspaceId,
-                req.params.id,
+                id,
                 parsed.data
             );
 
@@ -161,11 +160,10 @@ export class AdminContactsController {
     }
 
     static async deactivate(req: Request, res: Response) {
+        const id = getRequiredParam(req, "id");
+
         try {
-            await ContactService.deactivateContact(
-                req.user!.workspaceId,
-                req.params.id
-            );
+            await ContactService.deactivateContact(req.user!.workspaceId, id);
         } catch {
             // Por ahora no detenemos la vista.
         }

@@ -12,7 +12,8 @@ export class AdminTemplatesController {
             user: req.user,
             templates,
             success: req.query.success || null,
-            error: req.query.error || null
+            error: req.query.error || null,
+            count: req.query.count || null
         });
     }
 
@@ -23,7 +24,7 @@ export class AdminTemplatesController {
             );
 
             return res.redirect(
-                `/admin/templates?success=sync&count=${result.syncedCount}`
+                `/admin/templates?success=sync&count=${result.count}`
             );
         } catch {
             return res.redirect("/admin/templates?error=sync");

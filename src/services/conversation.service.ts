@@ -52,6 +52,105 @@ export class ConversationService {
         });
     }
 
+    static async listForAdmin(workspaceId: string) {
+        return prisma.conversation.findMany({
+            where: {
+                workspaceId
+            },
+            include: {
+                contact: true,
+                assignedUser: true,
+                messages: {
+                    orderBy: {
+                        createdAt: "desc"
+                    },
+                    take: 1
+                }
+            },
+            orderBy: [
+                {
+                    lastMessageAt: "desc"
+                },
+                {
+                    createdAt: "desc"
+                }
+            ]
+        });
+    }
+
+    static async listForAgent(workspaceId: string, agentId: string) {
+        return prisma.conversation.findMany({
+            where: {
+                workspaceId,
+                assignedUserId: agentId
+            },
+            include: {
+                contact: true,
+                assignedUser: true,
+                messages: {
+                    orderBy: {
+                        createdAt: "desc"
+                    },
+                    take: 1
+                }
+            },
+            orderBy: [
+                {
+                    lastMessageAt: "desc"
+                },
+                {
+                    createdAt: "desc"
+                }
+            ]
+        });
+    }
+
+    static async openFromContact(workspaceId: string, contactId: string) {
+        const contact = await prisma.contact.findFirst({
+            where: {
+                id: contactId,
+                workspaceId,
+                isActive: true
+            }
+        });
+
+        if (!contact) {
+            throw new Error("Contacto no encontrado.");
+        }
+
+        const existingConversation = await prisma.conversation.findUnique({
+            where: {
+                workspaceId_contactId: {
+                    workspaceId,
+                    contactId
+                }
+            }
+        });
+
+        if (existingConversation) {
+            return prisma.conversation.update({
+                where: {
+                    id: existingConversation.id
+                },
+                data: {
+                    status: "OPEN",
+                    closedAt: null
+                }
+            });
+        }
+
+        return prisma.conversation.create({
+            data: {
+                workspaceId,
+                contactId,
+                status: "OPEN",
+                operationalStatus: "UNASSIGNED",
+                source: "MANUAL",
+                lastMessageAt: new Date()
+            }
+        });
+    }
+
     static async getConversationForAdmin(
         workspaceId: string,
         conversationId: string

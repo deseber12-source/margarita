@@ -1,4 +1,4 @@
-import { LogLevel, LogModule } from "@prisma/client";
+import { LogLevel, LogModule, Prisma } from "@prisma/client";
 
 import { prisma } from "../config/prisma";
 
@@ -11,6 +11,14 @@ type CreateLogInput = {
     payload?: unknown;
 };
 
+function toPrismaJson(value: unknown): Prisma.InputJsonValue | undefined {
+    if (value === undefined) {
+        return undefined;
+    }
+
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
 export class LogService {
     static async create(input: CreateLogInput) {
         return prisma.log.create({
@@ -20,7 +28,7 @@ export class LogService {
                 module: input.module,
                 action: input.action,
                 message: input.message,
-                payload: input.payload === undefined ? undefined : input.payload
+                payload: toPrismaJson(input.payload)
             }
         });
     }

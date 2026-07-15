@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import { TagService } from "../services/tag.service";
+import { getRequiredParam } from "../utils/request";
 import {
     createTagSchema,
     updateTagSchema
@@ -64,10 +65,12 @@ export class AdminTagsController {
     }
 
     static async showEdit(req: Request, res: Response) {
+        const id = getRequiredParam(req, "id");
+
         try {
             const tag = await TagService.getTagById(
                 req.user!.workspaceId,
-                req.params.id
+                id
             );
 
             return res.render("pages/admin/tags/edit", {
@@ -81,12 +84,14 @@ export class AdminTagsController {
     }
 
     static async update(req: Request, res: Response) {
+        const id = getRequiredParam(req, "id");
+
         const parsed = updateTagSchema.safeParse(req.body);
 
         if (!parsed.success) {
             const tag = await TagService.getTagById(
                 req.user!.workspaceId,
-                req.params.id
+                id
             );
 
             return res.status(400).render("pages/admin/tags/edit", {
@@ -99,7 +104,7 @@ export class AdminTagsController {
         try {
             await TagService.updateTag(
                 req.user!.workspaceId,
-                req.params.id,
+                id,
                 parsed.data
             );
 
@@ -107,7 +112,7 @@ export class AdminTagsController {
         } catch (error) {
             const tag = await TagService.getTagById(
                 req.user!.workspaceId,
-                req.params.id
+                id
             );
 
             const message =
@@ -124,11 +129,10 @@ export class AdminTagsController {
     }
 
     static async deactivate(req: Request, res: Response) {
+        const id = getRequiredParam(req, "id");
+
         try {
-            await TagService.deactivateTag(
-                req.user!.workspaceId,
-                req.params.id
-            );
+            await TagService.deactivateTag(req.user!.workspaceId, id);
         } catch {
             // No detenemos el flujo visual por ahora.
         }

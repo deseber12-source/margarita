@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import { UserService } from "../services/user.service";
+import { getRequiredParam } from "../utils/request";
 import {
     createAgentSchema,
     updateAgentSchema
@@ -70,10 +71,12 @@ export class AdminUsersController {
     }
 
     static async showEdit(req: Request, res: Response) {
+        const id = getRequiredParam(req, "id");
+
         try {
             const agent = await UserService.getAgentById(
                 req.user!.workspaceId,
-                req.params.id
+                id
             );
 
             return res.render("pages/admin/users/edit", {
@@ -87,12 +90,14 @@ export class AdminUsersController {
     }
 
     static async update(req: Request, res: Response) {
+        const id = getRequiredParam(req, "id");
+
         const parsed = updateAgentSchema.safeParse(req.body);
 
         if (!parsed.success) {
             const agent = await UserService.getAgentById(
                 req.user!.workspaceId,
-                req.params.id
+                id
             );
 
             return res.status(400).render("pages/admin/users/edit", {
@@ -105,7 +110,7 @@ export class AdminUsersController {
         try {
             await UserService.updateAgent(
                 req.user!.workspaceId,
-                req.params.id,
+                id,
                 parsed.data
             );
 
@@ -116,11 +121,10 @@ export class AdminUsersController {
     }
 
     static async toggleStatus(req: Request, res: Response) {
+        const id = getRequiredParam(req, "id");
+
         try {
-            await UserService.toggleAgentStatus(
-                req.user!.workspaceId,
-                req.params.id
-            );
+            await UserService.toggleAgentStatus(req.user!.workspaceId, id);
         } catch {
             // No detenemos el flujo visual por ahora.
         }

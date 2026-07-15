@@ -7,15 +7,23 @@ import {
     MessageDirection,
     MessageSource,
     MessageStatus,
-    MessageType
+    MessageType,
+    Prisma
 } from "@prisma/client";
 
-import { AssignmentService } from "./assignment.service";
-import { normalizeMexicanPhone } from "../utils/phone";
-
 import { prisma } from "../config/prisma";
-import { MetaWebhookPayload, MetaWebhookMessage, MetaWebhookStatus } from "../types/meta-webhook";
+import {
+    MetaWebhookMessage,
+    MetaWebhookPayload,
+    MetaWebhookStatus
+} from "../types/meta-webhook";
+import { normalizeMexicanPhone } from "../utils/phone";
+import { AssignmentService } from "./assignment.service";
 import { LogService } from "./log.service";
+
+function toPrismaJson(value: unknown): Prisma.InputJsonValue {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
 
 export class MetaWebhookHandlerService {
     static async handleIncomingPayload(payload: MetaWebhookPayload) {
@@ -77,7 +85,9 @@ export class MetaWebhookHandlerService {
                     await this.handleIncomingMessage({
                         workspaceId: account.workspaceId,
                         message,
-                        profileName: contacts.find((contact) => contact.wa_id === message.from)?.profile?.name
+                        profileName: contacts.find(
+                            (contact) => contact.wa_id === message.from
+                        )?.profile?.name
                     });
                 }
 
@@ -121,15 +131,15 @@ export class MetaWebhookHandlerService {
             return;
         }
 
-            const normalizedPhone = normalizeMexicanPhone(message.from);
+        const normalizedPhone = normalizeMexicanPhone(message.from);
 
-const contact = await prisma.contact.upsert({
-    where: {
-        workspaceId_phone: {
-            workspaceId,
-            phone: normalizedPhone
-        }
-    },
+        const contact = await prisma.contact.upsert({
+            where: {
+                workspaceId_phone: {
+                    workspaceId,
+                    phone: normalizedPhone
+                }
+            },
             update: {
                 profileName: profileName || undefined,
                 lastSeenAt: new Date(),
@@ -167,48 +177,47 @@ const contact = await prisma.contact.upsert({
                 body: parsed.body,
                 mediaId: parsed.mediaId,
                 mimeType: parsed.mimeType,
-                metaPayload: message,
+                metaPayload: toPrismaJson(message),
                 createdAt: messageDate
             }
         });
 
-        //faltaidentar
         const updatedConversation = await prisma.conversation.update({
-    where: {
-        id: conversation.id
-    },
-    data: {
-        status: ConversationStatus.OPEN,
-        operationalStatus: conversation.assignedUserId
-            ? ConversationOperationalStatus.IN_PROGRESS
-            : ConversationOperationalStatus.UNASSIGNED,
-        lastIncomingMessageAt: messageDate,
-        lastMessageAt: messageDate,
-        closedAt: null
-    }
-});
+            where: {
+                id: conversation.id
+            },
+            data: {
+                status: ConversationStatus.OPEN,
+                operationalStatus: conversation.assignedUserId
+                    ? ConversationOperationalStatus.IN_PROGRESS
+                    : ConversationOperationalStatus.UNASSIGNED,
+                lastIncomingMessageAt: messageDate,
+                lastMessageAt: messageDate,
+                closedAt: null
+            }
+        });
 
-if (!updatedConversation.assignedUserId) {
-    await AssignmentService.assignLeastBusyAgent({
-        workspaceId,
-        conversationId: updatedConversation.id
-    });
-}
+        if (!updatedConversation.assignedUserId) {
+            await AssignmentService.assignLeastBusyAgent({
+                workspaceId,
+                conversationId: updatedConversation.id
+            });
+        }
 
-        //falta identar
         await LogService.create({
-    workspaceId,
-    level: LogLevel.INFO,
-    module: LogModule.WEBHOOK,
-    action: "WEBHOOK_INCOMING_MESSAGE_SAVED",
-    message: "Mensaje entrante guardado correctamente.",
-    payload: {
-        wamid: message.id,
-        from: message.from,
-        type: message.type,
-        conversationId: conversation.id
-    }
-});
+            workspaceId,
+            level: LogLevel.INFO,
+            module: LogModule.WEBHOOK,
+            action: "WEBHOOK_INCOMING_MESSAGE_SAVED",
+            message: "Mensaje entrante guardado correctamente.",
+            payload: {
+                wamid: message.id,
+                from: message.from,
+                normalizedPhone,
+                type: message.type,
+                conversationId: conversation.id
+            }
+        });
     }
 
     private static async getOrCreateConversationForIncomingMessage(params: {
@@ -291,7 +300,10 @@ if (!updatedConversation.assignedUserId) {
         if (message.type === "document") {
             return {
                 type: MessageType.DOCUMENT,
-                body: message.document?.caption || message.document?.filename || "[Documento]",
+                body:
+                    message.document?.caption ||
+                    message.document?.filename ||
+                    "[Documento]",
                 mediaId: message.document?.id || null,
                 mimeType: message.document?.mime_type || null
             };
@@ -355,10 +367,10 @@ if (!updatedConversation.assignedUserId) {
             },
             data: {
                 status: messageStatus,
-                metaResponse: {
+                metaResponse: toPrismaJson({
                     previousMetaResponse: existingMessage.metaResponse,
                     latestStatusWebhook: status
-                }
+                })
             }
         });
 

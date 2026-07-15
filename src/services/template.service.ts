@@ -1,17 +1,21 @@
 import axios from "axios";
-import { LogLevel, LogModule } from "@prisma/client";
+import { LogLevel, LogModule, Prisma } from "@prisma/client";
 
 import { prisma } from "../config/prisma";
 import { LogService } from "./log.service";
 
 type MetaTemplate = {
     id?: string;
-    name: string;
-    language: string;
+    name?: string;
+    language?: string;
     category?: string;
-    status: string;
+    status?: string;
     components?: unknown;
 };
+
+function toPrismaJson(value: unknown): Prisma.InputJsonValue {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
 
 export class TemplateService {
     static async listTemplates(workspaceId: string) {
@@ -42,7 +46,14 @@ export class TemplateService {
         });
     }
 
+    /**
+     * Alias para mantener compatibilidad con tu AdminTemplatesController actual.
+     */
     static async syncTemplates(workspaceId: string) {
+        return this.syncTemplatesFromMeta(workspaceId);
+    }
+
+    static async syncTemplatesFromMeta(workspaceId: string) {
         const account = await prisma.whatsAppAccount.findUnique({
             where: {
                 workspaceId
@@ -53,25 +64,24 @@ export class TemplateService {
             throw new Error("No hay cuenta de WhatsApp configurada.");
         }
 
-        const url = `https://graph.facebook.com/${account.apiVersion}/${account.businessAccountId}/message_templates`;
-
         try {
-            const response = await axios.get(url, {
-                params: {
-                    fields: "id,name,language,category,status,components",
-                    access_token: account.accessToken
-                },
-                timeout: 15000
-            });
+            const response = await axios.get(
+                `https://graph.facebook.com/${account.apiVersion}/${account.businessAccountId}/message_templates`,
+                {
+                    params: {
+                        access_token: account.accessToken,
+                        fields: "id,name,language,category,status,components"
+                    },
+                    timeout: 15000
+                }
+            );
 
             const templates = Array.isArray(response.data?.data)
                 ? (response.data.data as MetaTemplate[])
                 : [];
 
-            let syncedCount = 0;
-
             for (const template of templates) {
-                if (!template.name || !template.language || !template.status) {
+                if (!template.name || !template.language) {
                     continue;
                 }
 
@@ -86,12 +96,8 @@ export class TemplateService {
                     update: {
                         metaTemplateId: template.id || null,
                         category: template.category || null,
-                        status: template.status,
-                        components:
-                            template.components === undefined
-                                ? undefined
-                                : template.components,
-                        lastSyncedAt: new Date()
+                        status: template.status || "UNKNOWN",
+                        components: toPrismaJson(template.components || [])
                     },
                     create: {
                         workspaceId,
@@ -99,16 +105,10 @@ export class TemplateService {
                         name: template.name,
                         language: template.language,
                         category: template.category || null,
-                        status: template.status,
-                        components:
-                            template.components === undefined
-                                ? undefined
-                                : template.components,
-                        lastSyncedAt: new Date()
+                        status: template.status || "UNKNOWN",
+                        components: toPrismaJson(template.components || [])
                     }
                 });
-
-                syncedCount++;
             }
 
             await LogService.create({
@@ -116,41 +116,39 @@ export class TemplateService {
                 level: LogLevel.INFO,
                 module: LogModule.META,
                 action: "TEMPLATES_SYNC_SUCCESS",
-                message: `Se sincronizaron ${syncedCount} plantillas desde Meta.`,
+                message: "Plantillas sincronizadas correctamente desde Meta.",
                 payload: {
-                    syncedCount
+                    count: templates.length
                 }
             });
 
             return {
-                ok: true,
-                syncedCount
+                count: templates.length
             };
         } catch (error) {
-            const errorPayload =
-                axios.isAxiosError(error)
-                    ? {
-                          status: error.response?.status,
-                          data: error.response?.data,
-                          message: error.message
-                      }
-                    : {
-                          message:
-                              error instanceof Error
-                                  ? error.message
-                                  : "Error desconocido"
-                      };
+            const payload = axios.isAxiosError(error)
+                ? {
+                      status: error.response?.status,
+                      data: error.response?.data,
+                      message: error.message
+                  }
+                : {
+                      message:
+                          error instanceof Error
+                              ? error.message
+                              : "Error desconocido"
+                  };
 
             await LogService.create({
                 workspaceId,
                 level: LogLevel.ERROR,
                 module: LogModule.META,
                 action: "TEMPLATES_SYNC_FAILED",
-                message: "No se pudieron sincronizar plantillas desde Meta.",
-                payload: errorPayload
+                message: "No se pudieron sincronizar las plantillas desde Meta.",
+                payload
             });
 
-            throw new Error("No se pudieron sincronizar plantillas desde Meta.");
+            throw new Error("No se pudieron sincronizar las plantillas.");
         }
     }
 }
