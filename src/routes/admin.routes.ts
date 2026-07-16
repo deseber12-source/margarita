@@ -12,6 +12,7 @@ import adminTemplatesRoutes from "./admin-templates.routes";
 import adminConversationsRoutes from "./admin-conversations.routes";
 import adminLogsRoutes from "./admin-logs.routes";
 import adminCampaignsRoutes from "./admin-campaigns.routes";
+import adminSystemRoutes from "./admin-system.routes";
 
 
 const router = Router();
@@ -28,5 +29,6 @@ router.use("/templates", adminTemplatesRoutes);
 router.use("/conversations", adminConversationsRoutes);
 router.use("/logs", adminLogsRoutes);
 router.use("/campaigns", adminCampaignsRoutes);
+router.use("/system", adminSystemRoutes);
 
 export default router;
