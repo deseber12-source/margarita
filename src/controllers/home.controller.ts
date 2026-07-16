@@ -1,12 +1,21 @@
 import { Request, Response } from "express";
 
-import { appConfig } from "../config/app.config";
+const supportWhatsappNumber = "5255XXXXXXXX";
 
 export class HomeController {
-    static index(req: Request, res: Response) {
+    static async index(_req: Request, res: Response) {
         return res.render("pages/home/index", {
-            appName: appConfig.name,
-            version: "1.0.0"
+            title: "Margarita - WhatsApp operativo",
+            supportWhatsappNumber,
+            supportWhatsappUrl: `https://wa.me/${supportWhatsappNumber}`
+        });
+    }
+
+    static async howToStart(_req: Request, res: Response) {
+        return res.render("pages/home/how-to-start", {
+            title: "Cómo empezar - Margarita",
+            supportWhatsappNumber,
+            supportWhatsappUrl: `https://wa.me/${supportWhatsappNumber}`
         });
     }
 }
