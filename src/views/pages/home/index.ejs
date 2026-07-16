@@ -1,51 +1,129 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= appName %></title>
-    <link rel="stylesheet" href="/css/style.css" />
-</head>
+<%- include("../../partials/header", { title: "Margarita - WhatsApp operativo" }) %>
 
-<body class="min-h-screen bg-slate-100">
-    <main class="flex min-h-screen items-center justify-center px-6">
-        <section class="w-full max-w-lg rounded-2xl bg-white p-10 shadow-xl">
-            <div class="mb-8 text-center">
-                <div class="mb-4 text-5xl">🌼</div>
+<main class="min-h-screen bg-slate-950 text-white">
+    <section class="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-8">
+        <header class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-lg font-black text-white shadow-sm">
+                    M
+                </div>
 
-                <h1 class="text-4xl font-bold text-emerald-600">
-                    <%= appName %>
+                <div>
+                    <p class="text-lg font-black leading-tight">
+                        Margarita
+                    </p>
+
+                    <p class="text-xs font-medium text-slate-400">
+                        WhatsApp operativo
+                    </p>
+                </div>
+            </div>
+
+            <a href="/auth/login" class="rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-950 hover:bg-emerald-50">
+                Iniciar sesión
+            </a>
+        </header>
+
+        <div class="grid flex-1 items-center gap-12 py-16 lg:grid-cols-[1.1fr_0.9fr]">
+            <section>
+                <p class="inline-flex rounded-full bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300 ring-1 ring-emerald-500/20">
+                    Para equipos pequeños que usan WhatsApp Business
+                </p>
+
+                <h1 class="mt-8 max-w-4xl text-5xl font-black leading-tight tracking-tight md:text-6xl">
+                    Ordena campañas, conversaciones y agentes desde un solo panel.
                 </h1>
 
-                <p class="mt-4 text-slate-600">
-                    Plataforma operativa para WhatsApp Business Cloud API.
+                <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+                    Margarita ayuda a operar WhatsApp Cloud API de forma sencilla:
+                    plantillas aprobadas, campañas desde Excel, asignación de conversaciones
+                    y seguimiento básico para equipos pequeños.
                 </p>
 
-                <p class="mt-2 text-sm text-slate-500">
-                    Envía campañas, recibe respuestas, asigna conversaciones y monitorea mensajes desde un solo lugar.
-                </p>
-            </div>
+                <div class="mt-10 flex flex-col gap-3 sm:flex-row">
+                    <a href="/auth/login" class="rounded-xl bg-emerald-500 px-6 py-4 text-center text-sm font-black text-white shadow-lg shadow-emerald-950/40 hover:bg-emerald-400">
+                        Entrar al panel
+                    </a>
 
-            <div class="grid gap-3 sm:grid-cols-2">
-                <a
-                    href="/auth/login"
-                    class="rounded-xl bg-emerald-600 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-emerald-700"
-                >
-                    Ir al login
-                </a>
+                    <a href="/health" class="rounded-xl bg-white/10 px-6 py-4 text-center text-sm font-bold text-white ring-1 ring-white/10 hover:bg-white/15">
+                        Ver estado
+                    </a>
+                </div>
+            </section>
 
-                <a
-                    href="#estado"
-                    class="rounded-xl bg-slate-100 px-5 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-                >
-                    Estado del servidor
-                </a>
-            </div>
+            <section class="rounded-3xl bg-white/10 p-5 shadow-2xl ring-1 ring-white/10 backdrop-blur">
+                <div class="rounded-2xl bg-slate-900 p-5 ring-1 ring-white/10">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                        <div>
+                            <p class="text-sm font-bold text-white">
+                                Panel operativo
+                            </p>
 
-            <div id="estado" class="mt-6 rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-500">
-                Servidor funcionando correctamente · Versión <%= version %>
-            </div>
-        </section>
-    </main>
-</body>
-</html>
+                            <p class="mt-1 text-xs text-slate-400">
+                                Vista conceptual de Margarita
+                            </p>
+                        </div>
+
+                        <span class="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">
+                            Activo
+                        </span>
+                    </div>
+
+                    <div class="mt-5 grid gap-3">
+                        <div class="rounded-2xl bg-white/5 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                Campañas
+                            </p>
+
+                            <p class="mt-2 text-2xl font-black text-white">
+                                Excel → WhatsApp
+                            </p>
+
+                            <p class="mt-1 text-sm text-slate-400">
+                                Carga contactos y usa plantillas aprobadas.
+                            </p>
+                        </div>
+
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="rounded-2xl bg-white/5 p-4">
+                                <p class="text-xs text-slate-400">
+                                    Conversaciones
+                                </p>
+
+                                <p class="mt-2 text-3xl font-black text-emerald-300">
+                                    24h
+                                </p>
+
+                                <p class="text-sm text-slate-400">
+                                    Ventana libre
+                                </p>
+                            </div>
+
+                            <div class="rounded-2xl bg-white/5 p-4">
+                                <p class="text-xs text-slate-400">
+                                    Agentes
+                                </p>
+
+                                <p class="mt-2 text-3xl font-black text-white">
+                                    Equipo
+                                </p>
+
+                                <p class="text-sm text-slate-400">
+                                    Asignación simple
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl bg-emerald-500 p-4 text-slate-950">
+                            <p class="text-sm font-black">
+                                Simple para operar. Profesional por dentro.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </section>
+</main>
+
+<%- include("../../partials/footer") %>

@@ -93,7 +93,7 @@ export class SystemStatusService {
             })
         ]);
 
-        const webhookUrl = `${appConfig.appUrl}/webhook/meta/whatsapp`;
+        const webhookUrl = `${appConfig.appUrl}/webhooks/meta/whatsapp`;
 
         return {
             workspace,
