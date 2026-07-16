@@ -2,7 +2,17 @@ import { Request, Response } from "express";
 
 import { CampaignService } from "../services/campaign.service";
 import { getRequiredParam } from "../utils/request";
-import { createCampaignSchema } from "../validations/campaign.validation";
+
+import fs from "fs";
+import { ExcelCampaignService } from "../services/excel-campaign.service";
+import {
+    createCampaignFromExcelSchema,
+    createCampaignSchema
+} from "../validations/campaign.validation";
+
+
+
+
 
 export class AdminCampaignsController {
     static async index(req: Request, res: Response) {
@@ -73,6 +83,25 @@ export class AdminCampaignsController {
         });
     }
 
+    static async retryFailed(req: Request, res: Response) {
+        const campaignId = getRequiredParam(req, "id");
+
+        try {
+            await CampaignService.retryFailedRecipients(
+                req.user!.workspaceId,
+                campaignId
+            );
+
+            return res.redirect(
+                `/admin/campaigns/${campaignId}?success=retry_failed`
+            );
+        } catch {
+            return res.redirect(
+                `/admin/campaigns/${campaignId}?error=retry_failed`
+            );
+        }
+    }
+
     static async send(req: Request, res: Response) {
         const campaignId = getRequiredParam(req, "id");
 
@@ -91,4 +120,40 @@ export class AdminCampaignsController {
             );
         }
     }
+
+    static async storeFromExcel(req: Request, res: Response) {
+        const parsed = createCampaignFromExcelSchema.safeParse(req.body);
+
+        if (!parsed.success || !req.file) {
+            if (req.file?.path && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+
+            return res.redirect("/admin/campaigns/create?error=excel_validation");
+        }
+
+        try {
+            const campaign = await ExcelCampaignService.createCampaignFromExcel({
+                workspaceId: req.user!.workspaceId,
+                createdById: req.user!.id,
+                input: parsed.data,
+                filePath: req.file.path
+            });
+
+            if (fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+
+            return res.redirect(
+                `/admin/campaigns/${campaign.id}?success=created_excel`
+            );
+        } catch {
+            if (req.file?.path && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+
+            return res.redirect("/admin/campaigns/create?error=excel_create");
+        }
+    }
+
 }

@@ -8,6 +8,8 @@
         },
         {}
     );
+
+    const failedRecipients = recipientSummary.FAILED || 0;
 %>
 
 <div class="min-h-screen bg-slate-100">
@@ -54,6 +56,12 @@
             </div>
         <% } %>
 
+        <% if (success === "retry_failed") { %>
+            <div class="mb-6 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                Destinatarios fallidos reintentados correctamente.
+            </div>
+        <% } %>
+
         <% if (error === "send") { %>
             <div class="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
                 No se pudo enviar la campaña. Revisa logs y destinatarios.
@@ -63,6 +71,12 @@
         <% if (error && error !== "send") { %>
             <div class="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
                 Ocurrió un error en la campaña.
+            </div>
+        <% } %>
+
+        <% if (error === "retry_failed") { %>
+            <div class="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                No se pudieron reintentar los destinatarios fallidos.
             </div>
         <% } %>
 
@@ -154,21 +168,38 @@
                     </h2>
 
                     <p class="mt-1 text-sm text-slate-500">
-                        Esta versión envía la plantilla uno por uno a los destinatarios pendientes.
+                        Envía destinatarios pendientes o reintenta solo los fallidos.
                     </p>
                 </div>
 
-                <% if (campaign.status === "DRAFT" || campaign.status === "READY" || campaign.status === "FAILED") { %>
-                    <form action="/admin/campaigns/<%= campaign.id %>/send" method="POST">
-                        <button class="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
-                            Enviar campaña
-                        </button>
-                    </form>
-                <% } else { %>
-                    <span class="rounded-xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-500">
-                        Envío no disponible en estado <%= campaign.status %>
-                    </span>
-                <% } %>
+                <div class="flex flex-wrap gap-3">
+                    <% if (campaign.status === "DRAFT" || campaign.status === "READY" || campaign.status === "FAILED") { %>
+                        <form action="/admin/campaigns/<%= campaign.id %>/send" method="POST">
+                            <button class="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
+                                Enviar campaña
+                            </button>
+                        </form>
+                    <% } %>
+
+                    <% if (failedRecipients > 0) { %>
+                        <form action="/admin/campaigns/<%= campaign.id %>/retry-failed" method="POST">
+                            <button class="rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white hover:bg-orange-600">
+                                Reintentar fallidos (<%= failedRecipients %>)
+                            </button>
+                        </form>
+                    <% } %>
+
+                    <% if (
+                        campaign.status !== "DRAFT" &&
+                        campaign.status !== "READY" &&
+                        campaign.status !== "FAILED" &&
+                        failedRecipients === 0
+                    ) { %>
+                        <span class="rounded-xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-500">
+                            No hay acciones disponibles en estado <%= campaign.status %>
+                        </span>
+                    <% } %>
+                </div>
             </div>
         </section>
 

@@ -469,6 +469,67 @@ export class CampaignService {
         };
     }
 
+    static async retryFailedRecipients(workspaceId: string, campaignId: string) {
+        const campaign = await prisma.campaign.findFirst({
+            where: {
+                id: campaignId,
+                workspaceId
+            },
+            include: {
+                recipients: {
+                    where: {
+                        status: CampaignRecipientStatus.FAILED
+                    }
+                }
+            }
+        });
+
+        if (!campaign) {
+            throw new Error("Campaña no encontrada.");
+        }
+
+        if (campaign.recipients.length === 0) {
+            throw new Error("No hay destinatarios fallidos para reintentar.");
+        }
+
+        await prisma.campaignRecipient.updateMany({
+            where: {
+                campaignId: campaign.id,
+                status: CampaignRecipientStatus.FAILED
+            },
+            data: {
+                status: CampaignRecipientStatus.PENDING,
+                errorCode: null,
+                errorMessage: null
+            }
+        });
+
+        await prisma.campaign.update({
+            where: {
+                id: campaign.id
+            },
+            data: {
+                status: CampaignStatus.READY,
+                finishedAt: null
+            }
+        });
+
+        await LogService.create({
+            workspaceId,
+            level: LogLevel.INFO,
+            module: LogModule.CAMPAIGN,
+            action: "CAMPAIGN_FAILED_RECIPIENTS_RETRY_PREPARED",
+            message: "Destinatarios fallidos preparados para reintento.",
+            payload: {
+                campaignId: campaign.id,
+                failedRecipients: campaign.recipients.length
+            }
+        });
+
+        return this.sendCampaign(workspaceId, campaign.id);
+    }
+
+
     private static async getOrCreateCampaignConversation(params: {
         workspaceId: string;
         contactId: string;

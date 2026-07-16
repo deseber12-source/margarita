@@ -19,6 +19,7 @@ export class AdminConversationsController {
         return res.render("pages/admin/conversations/index", {
             user: req.user,
             conversations,
+            status: typeof req.query.status === "string" ? req.query.status : "",
             success: req.query.success || null,
             error: req.query.error || null
         });
