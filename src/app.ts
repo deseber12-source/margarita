@@ -9,9 +9,12 @@ import helmet from "helmet";
 
 import { appConfig } from "./config/app.config";
 import indexRoutes from "./routes/index.routes";
+import healthRoutes from "./routes/health.routes";
 
 
 const app = express();
+
+app.set("trust proxy", 1);
 
 const rootDir = process.cwd();
 
@@ -52,6 +55,8 @@ app.use(express.static(path.join(rootDir, "src", "public")));
 app.set("view engine", "ejs");
 
 app.set("views", path.join(rootDir, "src", "views"));
+
+app.use("/health", healthRoutes);
 
 app.use("/", indexRoutes);
 

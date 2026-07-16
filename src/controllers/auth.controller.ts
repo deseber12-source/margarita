@@ -44,9 +44,9 @@ export class AuthController {
             });
 
             res.cookie(appConfig.cookieName, result.token, {
-                httpOnly: true,
+                  httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
                 sameSite: "lax",
-                secure: appConfig.env === "production",
                 maxAge: 7 * 24 * 60 * 60 * 1000
             });
 
@@ -76,7 +76,11 @@ export class AuthController {
             await AuthService.logout(req.tokenId, req.user.id);
         }
 
-        res.clearCookie(appConfig.cookieName);
+        res.clearCookie(appConfig.cookieName, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax"
+        });
 
         return res.redirect("/auth/login");
     }
