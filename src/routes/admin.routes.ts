@@ -13,6 +13,7 @@ import adminConversationsRoutes from "./admin-conversations.routes";
 import adminLogsRoutes from "./admin-logs.routes";
 import adminCampaignsRoutes from "./admin-campaigns.routes";
 import adminSystemRoutes from "./admin-system.routes";
+import adminRoadmapRoutes from "./admin-roadmap.routes";
 
 
 const router = Router();
@@ -30,5 +31,6 @@ router.use("/conversations", adminConversationsRoutes);
 router.use("/logs", adminLogsRoutes);
 router.use("/campaigns", adminCampaignsRoutes);
 router.use("/system", adminSystemRoutes);
+router.use("/roadmap", adminRoadmapRoutes);
 
 export default router;
